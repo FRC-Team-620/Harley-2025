@@ -23,8 +23,8 @@ import edu.wpi.first.math.util.Units;
 public class DriveConstants {
   public static final double maxSpeedMetersPerSec = 4.8;
   public static final double odometryFrequency = 100.0; // Hz
-  public static final double trackWidth = Units.inchesToMeters(26.5);
-  public static final double wheelBase = Units.inchesToMeters(26.5);
+  public static final double trackWidth = Units.inchesToMeters(22.5);
+  public static final double wheelBase = Units.inchesToMeters(22.5);
   public static final double driveBaseRadius = Math.hypot(trackWidth / 2.0, wheelBase / 2.0);
   public static final Translation2d[] moduleTranslations =
       new Translation2d[] {
@@ -42,8 +42,9 @@ public class DriveConstants {
 
   // Device CAN IDs
 
-  // Electronic Spreadsheet https://docs.google.com/spreadsheets/d/1E2qQl7P2I0ImZtpcdnKNVKiHB-iJdpjz9EQkrZBmuj4/edit?usp=sharing
-  public static final int pigeonCanId = 60;
+  // Electronic Spreadsheet
+  // https://docs.google.com/spreadsheets/d/1E2qQl7P2I0ImZtpcdnKNVKiHB-iJdpjz9EQkrZBmuj4/edit?usp=sharing
+  public static final int pigeonCanId = 62;
 
   public static final int frontLeftDriveCanId = 10;
   public static final int backLeftDriveCanId = 12;
