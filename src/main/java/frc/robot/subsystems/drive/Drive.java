@@ -39,11 +39,13 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.util.AntiTipping;
 import frc.robot.util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -70,6 +72,10 @@ public class Drive extends SubsystemBase {
       };
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, new Pose2d());
+
+  private final AntiTipping antiTipping;
+  private ChassisSpeeds antiTippingCorrection = new ChassisSpeeds();
+  private boolean antiTippingEnabled = true;
 
   public Drive(
       GyroIO gyroIO,
@@ -111,6 +117,11 @@ public class Drive extends SubsystemBase {
           Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
         });
 
+    // initialize anti-tipping system
+    antiTipping =
+        new AntiTipping(
+            () -> gyroInputs.pitchDegrees, () -> gyroInputs.rollDegrees, 0.02, 3.0, 0.4);
+
     // Configure SysId
     sysId =
         new SysIdRoutine(
@@ -128,6 +139,14 @@ public class Drive extends SubsystemBase {
     odometryLock.lock(); // Prevents odometry updates while reading data
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Drive/Gyro", gyroInputs);
+
+    // calculate anti-tipping correction:
+    antiTipping.calculate();
+
+    SmartDashboard.putBoolean("IsTipping", antiTipping.isTipping());
+    SmartDashboard.putNumber("Pitch", gyroInputs.pitchDegrees);
+    SmartDashboard.putNumber("Roll", gyroInputs.rollDegrees);
+
     for (var module : modules) {
       module.periodic();
     }
@@ -188,6 +207,13 @@ public class Drive extends SubsystemBase {
    * @param speeds Speeds in meters/sec
    */
   public void runVelocity(ChassisSpeeds speeds) {
+    // get anti-tipping correction
+    ChassisSpeeds correction = antiTipping.getVelocityAntiTipping();
+
+    // add it to the commanded speeds
+    speeds.vxMetersPerSecond += correction.vxMetersPerSecond;
+    speeds.vyMetersPerSecond += correction.vyMetersPerSecond;
+
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
