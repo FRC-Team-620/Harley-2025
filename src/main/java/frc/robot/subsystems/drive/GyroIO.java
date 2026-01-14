@@ -24,10 +24,6 @@ public interface GyroIO {
     public double yawVelocityRadPerSec = 0.0;
     public double[] odometryYawTimestamps = new double[] {};
     public Rotation2d[] odometryYawPositions = new Rotation2d[] {};
-
-    // add these two lines for anti-tipping code
-    public double rollDegrees = 0.0;
-    public double pitchDegrees = 0.0;
   }
 
   public default void updateInputs(GyroIOInputs inputs) {}
