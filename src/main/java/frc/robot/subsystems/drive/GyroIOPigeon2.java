@@ -34,10 +34,6 @@ public class GyroIOPigeon2 implements GyroIO {
   private final Queue<Double> yawTimestampQueue;
   private final StatusSignal<AngularVelocity> yawVelocity = pigeon.getAngularVelocityZWorld();
 
-  private final StatusSignal<Angle> pitch = pigeon.getPitch();
-  private final StatusSignal<Angle> roll = pigeon.getRoll();
-  private Double prevRawRoll = null;
-
   public GyroIOPigeon2() {
     pigeon.getConfigurator().apply(new Pigeon2Configuration());
     pigeon.getConfigurator().setYaw(0.0);
@@ -46,47 +42,11 @@ public class GyroIOPigeon2 implements GyroIO {
     pigeon.optimizeBusUtilization();
     yawTimestampQueue = SparkOdometryThread.getInstance().makeTimestampQueue();
     yawPositionQueue = SparkOdometryThread.getInstance().registerSignal(yaw::getValueAsDouble);
-
-    pitch.setUpdateFrequency(50);
-    roll.setUpdateFrequency(50);
-    pigeon.optimizeBusUtilization();
   }
 
   @Override
   public void updateInputs(GyroIOInputs inputs) {
-    inputs.connected =
-        BaseStatusSignal.refreshAll(yaw, yawVelocity, pitch, roll).equals(StatusCode.OK);
-
-    double rawPitch = pitch.getValueAsDouble();
-    double rawRoll = roll.getValueAsDouble();
-
-    if (prevRawRoll == null) {
-      prevRawRoll = rawRoll;
-    }
-
-    double change = rawRoll - prevRawRoll;
-
-    if (change > 180) {
-      rawRoll -= 360;
-    } else if (change < -180) {
-      rawRoll += 360;
-    }
-
-    double correctedRoll = rawRoll + 180.0;
-
-    correctedRoll = correctedRoll % 360;
-    if (correctedRoll > 180) {
-      correctedRoll -= 360;
-    }
-    if (correctedRoll < -180) {
-      correctedRoll += 360;
-    }
-
-    inputs.pitchDegrees = rawPitch;
-    inputs.rollDegrees = correctedRoll;
-
-    prevRawRoll = rawRoll;
-
+    inputs.connected = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
     inputs.yawPosition = Rotation2d.fromDegrees(yaw.getValueAsDouble());
     inputs.yawVelocityRadPerSec = Units.degreesToRadians(yawVelocity.getValueAsDouble());
 
